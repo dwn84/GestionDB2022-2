@@ -1,0 +1,59 @@
+--creacion y manejo de esquemas
+create schema configuracion;
+create table configuracion.datosConfiguracion(
+	id varchar(50),
+	ipservidor varchar(50)
+);
+create table configuracion.datosRoot(
+	idRoot varchar(50),
+	descripcion varchar(50)
+)
+--trasladar una tabla ya existente
+alter schema configuracion
+	transfer dbo.cliente
+-- Ahora es necesario indicar el esquema
+select * from configuracion.cliente;
+
+
+--Tablas temporales(Auditoria - Registro de consultas)
+create table departamento(
+	idDepartamento varchar(5) primary key,
+	descripcion varchar(5),
+	RegistroTiempoInicial datetime2 generated always as row start,
+	RegistroTiempoFinal datetime2 generated always as row end,
+	PERIOD FOR SYSTEM_TIME (RegistroTiempoInicial, RegistroTiempoFinal)
+)
+with(system_versioning = on (history_table = dbo.departmentoHistory));
+
+
+insert into departamento(idDepartamento,descripcion) 
+values('00001','Conta'), ('00002','Merca'),('00003','Inge');
+
+--Eventos que registrará el sistema
+update departamento set descripcion = 'Nomin' where idDepartamento='00001'
+update departamento set descripcion = 'Produ' where idDepartamento='00003'
+update departamento set descripcion = 'XXXYZ' where idDepartamento='00001'
+delete from departamento where idDepartamento='00002';
+
+--verificar movimientos en tabla oficial y tabla temporal
+select * from departamento;
+select * from departmentoHistory;
+
+
+--informe de cambios en los datos
+select d.idDepartamento, d.descripcion [descripcion actual], dH.descripcion [descripcion anterior] from departamento d
+join departmentoHistory dH on d.idDepartamento= dH.idDepartamento
+order by d.idDepartamento, dH.descripcion
+
+
+--informe de datos borrados
+select dh.idDepartamento, dH.descripcion [Datos borrados], dh.RegistroTiempoFinal from departamento d
+left join departmentoHistory dH on d.idDepartamento= dH.idDepartamento
+where d.idDepartamento is null
+order by d.idDepartamento
+
+
+--finalización de periodo de auditoria
+alter table dbo.departamento set (system_versioning = off)
+--Inicio de nuevo periodo de auditorio
+alter table dbo.departamento set (system_versioning = on (history_table = dbo.departmentoHistorySeptiembre))
