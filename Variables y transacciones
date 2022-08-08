@@ -1,0 +1,121 @@
+--creacion de variables
+declare @puntoMedio float;
+declare @promedio float;
+declare @mimaximo float;
+
+set @promedio = (select avg(precio) from producto);--almacenar resultado de una consulta
+--Cualquiera de las siguientes dos asignaciones a la variable @mimaximo es válida
+set @mimaximo = (select max(precio) from producto)
+select @mimaximo = max(precio) from producto
+
+select * from producto where precio > @promedio -- consulta anidada "subconsulta"
+
+--Encontrar la mediana del precio
+set @puntoMedio = (select count(*) from producto) --almacenar el punto medio
+-- select CEILING(@puntoMedio/2);
+
+
+declare @total int;
+set @total = cast(floor(@puntoMedio/2) as int);
+select @total as PosicionMedia;
+select precio as mediana  from producto order by precio
+offset @total rows --desde donde empieza a mostrar datos
+fetch next @total rows only --hasta donde
+
+
+--Ejemplo de variable como control de ciclo y llenado de datos
+CREATE TABLE TblPrueba (datosA INT, datosB CHAR(4));
+GO
+DECLARE @MiContador INT;
+SET @MiContador = 0;
+WHILE (@MiContador < 100000)
+BEGIN;
+   INSERT INTO TblPrueba VALUES
+      (
+        @MiContador,
+        CHAR( ( @MiContador + ASCII('a') ) )
+       );  
+   SET @MiContador = @MiContador + 1;
+END;
+GO
+SELECT * FROM TblPrueba;
+GO
+DROP TABLE TblPrueba;
+GO
+
+-- Almacenar resultado de consulta en variable
+CREATE TABLE TblPrueba (datosA INT, datosB CHAR(1));
+GO
+DECLARE @MiContador INT;
+SET @MiContador = 0;
+WHILE (@MiContador < 26)
+BEGIN;
+   INSERT INTO TblPrueba VALUES
+      (
+        @MiContador,
+        CHAR( ( @MiContador + ASCII('a') ) )
+       );  
+   SET @MiContador = @MiContador + 1;
+END;
+DECLARE @GetMax INT;
+SELECT @GetMax = MAX(datosA) FROM TblPrueba;
+select @GetMax;--ver el contenido de la variable
+DROP TABLE TblPrueba;
+GO
+
+--creación de tabla temporal
+CREATE TABLE TblPrueba (datosA INT, datosB CHAR(1));
+GO
+DECLARE @MiContador INT;
+SET @MiContador = 0;
+WHILE (@MiContador < 26)
+BEGIN;
+   INSERT INTO TblPrueba VALUES
+      (
+        @MiContador,
+        CHAR( ( @MiContador + ASCII('a') ) )
+       );  
+   SET @MiContador = @MiContador + 1;
+END;
+DECLARE @TblTempDatos TABLE
+(
+  datosTempA INT, 
+  datosTempB CHAR(1)
+);
+INSERT INTO  @TblTempDatos SELECT * FROM TblPrueba;
+SELECT * FROM @TblTempDatos;
+--delete from @TblTempDatos-- where ...
+GO
+DROP TABLE TblPrueba;
+GO
+
+
+
+
+--manejo de transacción
+SET IMPLICIT_TRANSACTIONS ON 
+UPDATE producto SET precio = 9999 WHERE id_producto='P111'
+SELECT 
+    @@TRANCOUNT AS [Transacciones abiertas] 
+rollback tran -- o cancelo (volver a un estado anterior.... NO realizar la acción pendiente)
+SELECT * from producto
+COMMIT TRAN  --  o confirmo
+SELECT 
+    @@TRANCOUNT AS [Transacciones abiertas]
+
+
+BEGIN TRAN
+IF EXISTS (SELECT * FROM producto
+                WHERE id_producto = 'P111')
+    UPDATE producto SET precio = 9999 WHERE id_producto = 'P111'
+ ELSE
+    ROLLBACK
+IF EXISTS (SELECT *
+                FROM producto
+                WHERE id_producto = 'P222')
+     BEGIN
+        UPDATE producto SET precio = 9999 WHERE id_producto = 'P222'
+        COMMIT 
+     END
+ ELSE
+    ROLLBACK
