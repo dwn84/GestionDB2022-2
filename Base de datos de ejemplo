@@ -1,0 +1,114 @@
+create database facturacion;
+go
+use facturacion;
+go
+create table cliente(
+	id_cliente varchar(50),
+	nombre varchar(50) not null,
+	apellido varchar(50) not null,
+	direccion varchar(120) not null,
+	fecha_nacimiento date default '01/01/1981',
+	telefono char(10),
+	email varchar(120) not null,
+	primary key(id_cliente)
+);
+go
+insert into cliente(id_cliente,nombre,apellido,direccion,email)
+values('111','dario','gomez','cra 11','dariogo@gmail.com');
+select * from cliente;
+create table categorias(
+	id_categoria varchar(50),
+	nombre varchar(50) not null,
+	descripcion varchar(50) not null,	
+	primary key(id_categoria)
+);
+go
+create table modo_pago(
+	num_pago varchar(50),
+	nombre varchar(50) not null,
+	otros_deatalles varchar(50) not null,	
+	primary key(num_pago)
+);
+go
+create table producto(
+	id_producto varchar(50),
+	nombre varchar(50) not null,
+	precio float not null,
+	stock int not null,
+	id_categoria varchar(50),
+	constraint PK_productoX primary key(id_producto),
+	constraint FK_categoriaX foreign key(id_categoria) references categorias(id_categoria) on update cascade,
+	constraint CK_stock check (stock>=10),	
+	constraint CK_id_producto check (id_producto like 'FAC%')
+);
+go
+create table factura(
+	num_factura varchar(50),
+	fecha date not null,
+	id_cliente varchar(50),
+	num_pago varchar(50),
+	primary key(num_factura),
+	foreign key(id_cliente) references cliente(id_cliente) on update cascade,
+	foreign key(num_pago) references modo_pago(num_pago) on update cascade
+);
+go
+create table detalle(
+	num_detalle varchar(50),
+	id_factura varchar(50),
+	id_producto varchar(50),
+	cantidad int, 
+	precio float,
+	primary key(num_detalle,id_factura),
+	foreign key(id_factura) references factura(num_factura) on update cascade,
+	foreign key(id_producto) references producto(id_producto) on update cascade
+);
+
+insert into modo_pago values
+('MP111','efectivo','dinero contante y sonante'),
+('MP222','tarjeta débito','dinero plástico'),
+('MP333','bitcoin','dinero virtual');
+
+insert into categorias values
+('C111','mercado','canasta familiar'),
+('C222','eletrodomésticos','línea blanca'),
+('C333','jugueteria','niños y niñas');
+
+insert into producto values
+('P111','Bolsa de leche',3000,2200,'C111'),
+('P222','Lentejas 500 gr',2000,1000,'C111'),
+('P333','Nintendo Switch pro',1800000,5,'C333');
+
+insert into factura values
+('00001',CURRENT_TIMESTAMP,'111','MP111'),
+('00002',CURRENT_TIMESTAMP,'111','MP222')
+
+insert into detalle values
+('1','00001','P111',3,3000),
+('2','00001','P222',1,2000),
+('1','00002','P333',1,1800000)
+
+select count(distinct(ca.nombre)) catgorias from cliente c
+join factura f on c.id_cliente = f.id_cliente
+join detalle d on f.num_factura = d.id_factura
+join producto p on p.id_producto = d.id_producto
+join categorias ca on ca.id_categoria = p.id_categoria
+where c.id_cliente = '111'
+
+
+--validacion de transacción: problemas en llaves primarias o foraneas
+begin tran
+	insert into producto values
+	('P121','Frijoles',3000,2200,'C111');
+	insert into producto values
+	('P110','Arequipito',3000,2200,'C188');
+
+	if(@@ERROR<>0)
+		begin
+			rollback --cancelar las transacciones pendientes y liberar memoria
+			print N'Error inesperado contacte al administrador...'
+		end
+	else
+		begin
+			commit
+			print('OK')
+		end
