@@ -1,0 +1,71 @@
+if OBJECT_ID('producto') is not null
+	--mostrar información detallada del objeto
+	exec sp_help producto;	
+else
+	print ('No existe el objeto')
+
+if OBJECT_ID('sp_producto') is not null
+	drop procedure sp_producto
+go
+create procedure sp_producto
+--por defecto todos los parámetros son de entrada
+@validarPrecio float, -- parémetro obligatorio
+@validarStock int = 11, -- parámetro opcional
+@sumatoriaStock int out,
+@precioPromedio int out
+as
+	begin
+		select * from producto
+		where precio > @validarPrecio 
+		and stock between 5 and @validarStock;
+		set @sumatoriaStock = (select sum(stock) from producto);
+		select @precioPromedio = avg(precio) from producto
+	end
+
+go
+
+declare @sum int;
+declare @prom int;
+exec sp_producto 2200,20,@sum out, @prom out
+select @sum [Suma de stock], @prom [precio promedio]
+
+if OBJECT_ID('sp_cliente') is not null
+	drop procedure sp_cliente
+go
+create procedure sp_cliente
+@fechaNacimiento date=null,
+@apellido varchar(50)=null
+as
+	if @fechaNacimiento is null
+		begin	
+			select 'no se puede proceder sin fecha';
+			print 'no se puede proceder sin fecha';
+			return
+		end
+	if @apellido like 'a%'
+		return 1
+	else
+		return 0
+go
+declare @retorno int;
+exec @retorno = sp_cliente 
+select @retorno
+
+
+declare @n1 tinyint;
+set @n1 = 1;
+declare @n2 tinyint;
+set @n2 = 1;
+begin try
+	select @n1+@n2;
+end try
+begin catch
+	select 'Se ha disparado una excepción!!!!'
+	SELECT  
+		ERROR_NUMBER() AS ErrorNumber  
+		,ERROR_SEVERITY() AS ErrorSeverity  
+		,ERROR_STATE() AS ErrorState  
+		,ERROR_PROCEDURE() AS ErrorProcedure  
+		,ERROR_LINE() AS ErrorLine  
+		,ERROR_MESSAGE() AS ErrorMessage;  
+end catch
