@@ -1,0 +1,8 @@
+select * from sys.databases
+select * from sys.sysprocesses
+select * from sys.dm_exec_sessions
+select * from sys.dm_exec_connections
+select * from sys.dm_exec_sessions es
+join sys.dm_exec_connections ec on es.session_id = ec.session_id order by cpu_time desc
+
+kill 52
