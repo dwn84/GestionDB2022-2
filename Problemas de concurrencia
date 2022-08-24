@@ -1,0 +1,38 @@
+------------------------------------------------------------------------------------------
+-- Actualización perdida
+--Cliente1
+
+
+--Cliente2
+
+------------------------------------------------------------------------------------------
+-- Lecturia sucia
+--Cliente1
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+--Aumenta velocidad de procesamiento pero sacrifica la consistencia del sistema
+Begin tran
+	update Production.Product set SafetyStockLevel = 9999 where ProductID = 1
+	waitfor delay '00:00:05'
+Rollback
+select * from Production.Product where ProductID = 1
+
+--Cliente2
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+select * from Production.Product where ProductID = 1
+
+------------------------------------------------------------------------------------------
+-- lectura no repetible
+--Cliente1
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+
+select * from Production.Product where ProductID = 1
+waitfor delay '00:00:10'
+select * from Production.Product where ProductID = 1
+
+--Cliente2
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+
+Begin tran
+	update Production.Product set SafetyStockLevel = 9999 where ProductID = 1	
+Commit
+
