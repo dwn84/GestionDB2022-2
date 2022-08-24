@@ -1,9 +1,23 @@
 ------------------------------------------------------------------------------------------
 -- Actualización perdida
 --Cliente1
-
+declare @stock int = 0, @incremento int= 5
+begin tran
+	select @stock = SafetyStockLevel from Production.Product where ProductID = 1
+	set @stock = @stock + @incremento
+	waitfor delay '00:00:10'
+	update Production.Product  set SafetyStockLevel = @stock where ProductID = 1
+	select * from Production.Product where ProductID = 1
+commit
 
 --Cliente2
+declare @stock int = 0, @incremento int= 99
+begin tran
+	select @stock = SafetyStockLevel from Production.Product where ProductID = 1
+	set @stock = @stock + @incremento
+	update Production.Product  set SafetyStockLevel = @stock where ProductID = 1
+	select * from Production.Product where ProductID = 1
+commit
 
 ------------------------------------------------------------------------------------------
 -- Lecturia sucia
@@ -21,7 +35,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 select * from Production.Product where ProductID = 1
 
 ------------------------------------------------------------------------------------------
--- lectura no repetible
+-- lectura fantasma
 --Cliente1
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
 
